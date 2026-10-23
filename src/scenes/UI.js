@@ -3,6 +3,7 @@ import { YouTubePlayables } from '../YouTubePlayables.js';
 import { FIRST_MILESTONE_COINS, CURRENCY_SYMBOL } from '../data/products.js';
 import { MarketingModal } from '../ui/MarketingModal.js';
 import { BankModal } from '../ui/BankModal.js';
+import { UpgradesModal } from '../ui/UpgradesModal.js';
 import { EndOfDayModal } from '../ui/EndOfDayModal.js';
 
 export class UI extends Phaser.Scene {
@@ -15,6 +16,8 @@ export class UI extends Phaser.Scene {
         this.dayCycle = this.registry.get('dayCycleSystem');
         this.marketing = this.registry.get('marketingSystem');
         this.bank = this.registry.get('bankLoanSystem');
+        this.progression = this.registry.get('progressionSystem');
+        this.saveManager = this.registry.get('saveManager');
 
         this.activeModal = null;
 
@@ -97,46 +100,60 @@ export class UI extends Phaser.Scene {
         // Bottom Action Bar Container
         this.bottomBar = this.add.container(0, 0);
 
-        // Marketing Button
-        this.marketingBtn = this.add.container(-130, 0);
-        const mBg = this.add.rectangle(0, 0, 120, 42, 0x0284c7).setStrokeStyle(1.5, 0x38bdf8);
+        // 1. Marketing Button
+        this.marketingBtn = this.add.container(-160, 0);
+        const mBg = this.add.rectangle(0, 0, 96, 40, 0x0284c7).setStrokeStyle(1.5, 0x38bdf8);
         mBg.setInteractive({ useHandCursor: true });
-        this.mText = this.add.text(0, 0, '📢 Marketing', {
+        this.mText = this.add.text(0, 0, '📢 Ads', {
             fontFamily: 'system-ui, sans-serif',
-            fontSize: '13px',
+            fontSize: '12px',
             fontStyle: 'bold',
             color: '#ffffff'
         }).setOrigin(0.5);
         this.marketingBtn.add([mBg, this.mText]);
-
         mBg.on('pointerdown', () => this.openMarketingModal());
 
-        // Goal Tracker Pill
-        this.goalPill = this.add.container(0, 0);
-        const gBg = this.add.rectangle(0, 0, 130, 42, 0x0f172a, 0.9).setStrokeStyle(1.5, 0x334155);
-        this.goalText = this.add.text(0, 0, `🎯 ${CURRENCY_SYMBOL}${FIRST_MILESTONE_COINS}`, {
+        // 2. Upgrades Button
+        this.upgradesBtn = this.add.container(-55, 0);
+        const uBg = this.add.rectangle(0, 0, 100, 40, 0x0369a1).setStrokeStyle(1.5, 0x38bdf8);
+        uBg.setInteractive({ useHandCursor: true });
+        this.uText = this.add.text(0, 0, '⚡ Upgrades', {
             fontFamily: 'system-ui, sans-serif',
-            fontSize: '13px',
+            fontSize: '12px',
             fontStyle: 'bold',
-            color: '#cbd5e1'
+            color: '#ffffff'
         }).setOrigin(0.5);
-        this.goalPill.add([gBg, this.goalText]);
+        this.upgradesBtn.add([uBg, this.uText]);
+        uBg.on('pointerdown', () => this.openUpgradesModal());
 
-        // Bank Loan Button
-        this.bankBtn = this.add.container(130, 0);
-        const bBg = this.add.rectangle(0, 0, 110, 42, 0xb45309).setStrokeStyle(1.5, 0xfbbf24);
+        // 3. Bank Loan Button
+        this.bankBtn = this.add.container(50, 0);
+        const bBg = this.add.rectangle(0, 0, 96, 40, 0xb45309).setStrokeStyle(1.5, 0xfbbf24);
         bBg.setInteractive({ useHandCursor: true });
         this.bText = this.add.text(0, 0, '🏦 Bank', {
             fontFamily: 'system-ui, sans-serif',
-            fontSize: '13px',
+            fontSize: '12px',
             fontStyle: 'bold',
             color: '#ffffff'
         }).setOrigin(0.5);
         this.bankBtn.add([bBg, this.bText]);
-
         bBg.on('pointerdown', () => this.openBankModal());
 
-        this.bottomBar.add([this.marketingBtn, this.goalPill, this.bankBtn]);
+        // 4. Goal Tracker Pill
+        this.goalPill = this.add.container(155, 0);
+        const gBg = this.add.rectangle(0, 0, 102, 40, 0x0f172a, 0.95).setStrokeStyle(1.5, 0xca8a04);
+        gBg.setInteractive({ useHandCursor: true });
+        this.goalText = this.add.text(0, 0, '🎯 Goal', {
+            fontFamily: 'system-ui, sans-serif',
+            fontSize: '12px',
+            fontStyle: 'bold',
+            color: '#fef08a'
+        }).setOrigin(0.5);
+        this.goalPill.add([gBg, this.goalText]);
+        gBg.on('pointerdown', () => this.openUpgradesModal());
+
+        this.bottomBar.add([this.marketingBtn, this.upgradesBtn, this.bankBtn, this.goalPill]);
+        this.updateGoalPill();
     }
 
     createToastContainer() {
@@ -165,12 +182,30 @@ export class UI extends Phaser.Scene {
         });
     }
 
+    openUpgradesModal() {
+        if (this.activeModal) return;
+        this.activeModal = new UpgradesModal(this, this.progression, this.economy, this.saveManager, () => {
+            this.activeModal = null;
+            this.updateGoalPill();
+        });
+    }
+
     openBankModal() {
         if (this.activeModal) return;
         const currentDay = this.dayCycle ? this.dayCycle.currentDay : 1;
         this.activeModal = new BankModal(this, this.bank, this.economy, currentDay, () => {
             this.activeModal = null;
         });
+    }
+
+    updateGoalPill() {
+        if (!this.goalText) return;
+        const current = this.progression ? this.progression.currentMilestone : null;
+        if (current) {
+            this.goalText.setText(`🎯 ${CURRENCY_SYMBOL}${current.targetRevenue.toLocaleString()}`);
+        } else {
+            this.goalText.setText('🏆 Master');
+        }
     }
 
     showEndOfDaySummary(summary) {
@@ -185,6 +220,11 @@ export class UI extends Phaser.Scene {
             debtResult = this.bank.processDailyDebtService();
         }
 
+        // Auto-save day end ledger
+        if (this.saveManager) {
+            this.saveManager.scheduleSave(500);
+        }
+
         const currentCoins = this.economy ? this.economy.coins : 0;
 
         this.activeModal = new EndOfDayModal(this, summary, currentCoins, () => {
@@ -194,6 +234,9 @@ export class UI extends Phaser.Scene {
             }
             if (debtResult.bailoutTriggered) {
                 this.showToast('Emergency Family Bailout (+₹150) granted!', 'success');
+            }
+            if (this.saveManager) {
+                this.saveManager.scheduleSave(500);
             }
         });
     }
@@ -219,6 +262,7 @@ export class UI extends Phaser.Scene {
             this._unsubMarketing = this.marketing.subscribe((event) => {
                 if (event.type === 'campaign_launched') {
                     this.showToast(`Launched ${event.campaignId}! Customer arrivals boosted.`, 'success');
+                    if (this.saveManager) this.saveManager.scheduleSave(800);
                 } else if (event.type === 'campaign_expired') {
                     this.showToast('Marketing campaign ended.', 'info');
                 }
@@ -229,8 +273,23 @@ export class UI extends Phaser.Scene {
             this._unsubBank = this.bank.subscribe((event) => {
                 if (event.type === 'loan_disbursed') {
                     this.showToast(`Loan approved! +${CURRENCY_SYMBOL}${event.loan.principal} added to cash.`, 'success');
+                    if (this.saveManager) this.saveManager.scheduleSave(500);
                 } else if (event.type === 'loan_repaid' || event.type === 'loan_repaid_early') {
                     this.showToast('Loan fully repaid! Your credit is clear.', 'success');
+                    if (this.saveManager) this.saveManager.scheduleSave(500);
+                }
+            });
+        }
+
+        if (this.progression) {
+            this._unsubProgression = this.progression.subscribe((event) => {
+                if (event.type === 'milestone_unlocked') {
+                    this.showToast(`🏆 Milestone: ${event.milestone.title}! +${CURRENCY_SYMBOL}${event.reward}`, 'success');
+                    this.updateGoalPill();
+                    if (this.saveManager) this.saveManager.scheduleSave(500);
+                } else if (event.type === 'upgrade_purchased') {
+                    this.showToast(`Upgraded ${event.name}!`, 'success');
+                    if (this.saveManager) this.saveManager.scheduleSave(500);
                 }
             });
         }
@@ -367,6 +426,7 @@ export class UI extends Phaser.Scene {
         if (this._unsubDay) this._unsubDay();
         if (this._unsubMarketing) this._unsubMarketing();
         if (this._unsubBank) this._unsubBank();
+        if (this._unsubProgression) this._unsubProgression();
         super.destroy(fromScene);
     }
 }

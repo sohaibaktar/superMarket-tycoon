@@ -17,6 +17,8 @@ export class SupermarketScene extends Scene {
         this.dayCycle = this.registry.get('dayCycleSystem');
         this.marketing = this.registry.get('marketingSystem');
         this.bank = this.registry.get('bankLoanSystem');
+        this.progression = this.registry.get('progressionSystem');
+        this.saveManager = this.registry.get('saveManager');
 
         // Customer sprite lookup & pathing definitions
         this.customerSprites = new Map();
@@ -220,7 +222,10 @@ export class SupermarketScene extends Scene {
 
         // If marketing campaign has basket bonus, add extra desired items
         if (this.marketing && this.marketing.basketBonus > 0) {
-            const allProducts = Object.keys(PRODUCTS);
+            let allProducts = Object.keys(PRODUCTS);
+            if (this.progression && !this.progression.isRiceDepartmentUnlocked) {
+                allProducts = allProducts.filter(id => id !== 'rice');
+            }
             const extraCount = Math.min(this.marketing.basketBonus, allProducts.length - customer.desiredProductIds.length);
             for (let i = 0; i < extraCount; i++) {
                 const unpicked = allProducts.find(p => !customer.desiredProductIds.includes(p));
@@ -323,7 +328,8 @@ export class SupermarketScene extends Scene {
     scheduleFrontCheckout() {
         if (this.isProcessingCheckout) return;
 
-        this.time.delayedCall(900, () => {
+        const delay = this.progression ? this.progression.getCheckoutDelayMs() : 900;
+        this.time.delayedCall(delay, () => {
             this.processFrontCheckout();
         });
     }
@@ -358,6 +364,16 @@ export class SupermarketScene extends Scene {
             // Record revenue in daily ledger
             if (this.dayCycle) {
                 this.dayCycle.recordRevenue(serveRes.total);
+            }
+
+            // Record cumulative revenue for progression milestones
+            if (this.progression) {
+                this.progression.recordRevenue(serveRes.total);
+            }
+
+            // Periodic auto-save debounced
+            if (this.saveManager) {
+                this.saveManager.scheduleSave(2500);
             }
 
             if (sprite) {

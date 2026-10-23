@@ -22,17 +22,29 @@ export class ShelfDisplay extends Phaser.GameObjects.Container {
         this.inventory = inventorySystem;
         this.economy = economySystem;
         this.dayCycle = scene.registry.get('dayCycleSystem');
+        this.progression = scene.registry.get('progressionSystem');
         this.onFeedback = onRestockFeedback;
 
         this.createComponents();
+        this.updateLockState();
         this.updateStockDisplay();
 
         // Listen for external inventory updates
         this._unsubscribe = this.inventory.subscribe((event) => {
-            if (event.productId === this.productId || event.type === 'restore') {
+            if (event.productId === this.productId || event.type === 'restore' || event.type === 'capacity_change') {
                 this.updateStockDisplay();
             }
         });
+
+        // Listen for progression upgrades (permits, capacity)
+        if (this.progression) {
+            this._unsubscribeProgression = this.progression.subscribe((event) => {
+                if (event.type === 'upgrade_purchased') {
+                    this.updateLockState();
+                    this.updateStockDisplay();
+                }
+            });
+        }
 
         scene.add.existing(this);
     }
@@ -86,32 +98,37 @@ export class ShelfDisplay extends Phaser.GameObjects.Container {
         this.restockBtn = this.scene.add.container(0, 36);
 
         const restockQty = 5;
-        const restockCost = restockQty * p.restockCost;
+        this.restockQty = restockQty;
+        this.restockCost = restockQty * p.restockCost;
 
-        const btnBg = this.scene.add.rectangle(0, 0, 190, 34, 0x0284c7, 1)
+        this.btnBg = this.scene.add.rectangle(0, 0, 190, 34, 0x0284c7, 1)
             .setStrokeStyle(1.5, 0x38bdf8);
-        btnBg.setInteractive({ useHandCursor: true });
+        this.btnBg.setInteractive({ useHandCursor: true });
 
-        const btnText = this.scene.add.text(0, 0, `+${restockQty} Restock (${CURRENCY_SYMBOL}${restockCost})`, {
+        this.btnText = this.scene.add.text(0, 0, `+${restockQty} Restock (${CURRENCY_SYMBOL}${this.restockCost})`, {
             fontFamily: 'system-ui, -apple-system, sans-serif',
             fontSize: '13px',
             fontStyle: 'bold',
             color: '#ffffff'
         }).setOrigin(0.5);
 
-        this.restockBtn.add([btnBg, btnText]);
+        this.restockBtn.add([this.btnBg, this.btnText]);
         this.add(this.restockBtn);
 
         // Hover & Tap Micro-Interactions
-        btnBg.on('pointerover', () => {
-            btnBg.setFillStyle(0x0369a1);
+        this.btnBg.on('pointerover', () => {
+            if (!this.isLocked) {
+                this.btnBg.setFillStyle(0x0369a1);
+            }
         });
 
-        btnBg.on('pointerout', () => {
-            btnBg.setFillStyle(0x0284c7);
+        this.btnBg.on('pointerout', () => {
+            if (!this.isLocked) {
+                this.btnBg.setFillStyle(0x0284c7);
+            }
         });
 
-        btnBg.on('pointerdown', () => {
+        this.btnBg.on('pointerdown', () => {
             this.scene.tweens.add({
                 targets: this.restockBtn,
                 scaleX: 0.94,
@@ -120,11 +137,42 @@ export class ShelfDisplay extends Phaser.GameObjects.Container {
                 yoyo: true
             });
 
-            this.handleRestock(restockQty);
+            this.handleRestock(this.restockQty);
         });
     }
 
+    get isLocked() {
+        if (this.productId === 'rice') {
+            return !this.progression || !this.progression.isRiceDepartmentUnlocked;
+        }
+        return false;
+    }
+
+    updateLockState() {
+        if (!this.btnBg || !this.btnText) return;
+
+        if (this.isLocked) {
+            this.btnBg.setFillStyle(0x334155);
+            this.btnBg.setStrokeStyle(1.5, 0x475569);
+            this.btnText.setText('🔒 Permit Required');
+            this.btnText.setColor('#94a3b8');
+        } else {
+            this.btnBg.setFillStyle(0x0284c7);
+            this.btnBg.setStrokeStyle(1.5, 0x38bdf8);
+            this.btnText.setText(`+${this.restockQty} Restock (${CURRENCY_SYMBOL}${this.restockCost})`);
+            this.btnText.setColor('#ffffff');
+        }
+    }
+
     handleRestock(quantity) {
+        if (this.isLocked) {
+            this.showFloatingText('Permit Needed!', '#ef4444');
+            if (this.onFeedback) {
+                this.onFeedback('Unlock Jasmine Rice Gourmet Permit in Upgrades (₹200)!', 'error');
+            }
+            return;
+        }
+
         const result = this.inventory.restock(this.productId, quantity);
 
         if (result.success) {
@@ -143,6 +191,11 @@ export class ShelfDisplay extends Phaser.GameObjects.Container {
 
             if (this.dayCycle) {
                 this.dayCycle.recordRestockExpense(result.cost);
+            }
+
+            const saveManager = this.scene.registry.get('saveManager');
+            if (saveManager) {
+                saveManager.scheduleSave(2500);
             }
 
             if (this.onFeedback) {
@@ -223,6 +276,9 @@ export class ShelfDisplay extends Phaser.GameObjects.Container {
     destroy(fromScene) {
         if (this._unsubscribe) {
             this._unsubscribe();
+        }
+        if (this._unsubscribeProgression) {
+            this._unsubscribeProgression();
         }
         super.destroy(fromScene);
     }

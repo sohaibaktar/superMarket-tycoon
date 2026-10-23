@@ -96,4 +96,31 @@ describe('CustomerSystem', () => {
         expect(q3.success).toBe(false);
         expect(q3.spotIndex).toBe(-1);
     });
+
+    it('respects progression department permit and excludes rice until unlocked', () => {
+        const mockProgressionLocked = { isRiceDepartmentUnlocked: false };
+        customers.setProgressionSystem(mockProgressionLocked);
+
+        // Spawn multiple customers: none should have 'rice' in desiredProductIds
+        for (let i = 0; i < 20; i++) {
+            customers.reset();
+            const cust = customers.spawnCustomer();
+            expect(cust.desiredProductIds).not.toContain('rice');
+        }
+
+        // When permit unlocked
+        const mockProgressionUnlocked = { isRiceDepartmentUnlocked: true };
+        customers.setProgressionSystem(mockProgressionUnlocked);
+
+        let riceDemanded = false;
+        for (let i = 0; i < 30; i++) {
+            customers.reset();
+            const cust = customers.spawnCustomer();
+            if (cust.desiredProductIds.includes('rice')) {
+                riceDemanded = true;
+                break;
+            }
+        }
+        expect(riceDemanded).toBe(true);
+    });
 });

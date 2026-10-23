@@ -29,6 +29,15 @@ export class CustomerSystem {
 
         this._customerIdCounter = 1;
         this._listeners = new Set();
+        this._progression = null;
+    }
+
+    /**
+     * Optional progression reference to evaluate unlocked department permits.
+     * @param {import('./ProgressionSystem.js').ProgressionSystem} progressionSystem
+     */
+    setProgressionSystem(progressionSystem) {
+        this._progression = progressionSystem;
     }
 
     get activeCount() {
@@ -52,8 +61,12 @@ export class CustomerSystem {
             return null;
         }
 
-        // Pick 1 to 2 products to shop for from available store catalogue
-        const availableProductIds = Object.keys(PRODUCTS);
+        // Filter available products based on unlocked department permits
+        let availableProductIds = Object.keys(PRODUCTS);
+        if (this._progression && !this._progression.isRiceDepartmentUnlocked) {
+            availableProductIds = availableProductIds.filter(id => id !== 'rice');
+        }
+
         // Shuffle & pick 1 or 2
         const shuffled = [...availableProductIds].sort(() => 0.5 - Math.random());
         const desiredCount = Math.random() > 0.4 ? 2 : 1;
