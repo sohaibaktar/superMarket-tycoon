@@ -67,24 +67,21 @@ To provide a seamless, maintainable, and testable codebase:
 
 ---
 
-## 3. Detailed File-by-File Changes for Milestone 1
+## 3. Milestones 0 to 6 Implementation Status
 
-| File | Status | Description |
+| Milestone | Status | Key Deliverables & Systems |
 |---|---|---|
-| `src/data/products.js` | New | Defines the 5 core grocery products, restock costs, sale prices, and shelf capacities. |
-| `src/systems/EconomySystem.js` | New | Pure domain logic for coin balance, credits, debits, affordability checks, and validation. |
-| `src/systems/InventorySystem.js` | New | Pure domain logic for stock tracking, shelf capacity, and atomic restocking. |
-| `src/scenes/SupermarketScene.js` | New | Responsive 2D Phaser scene: floor, shelves, checkout counter, touch interactions. |
-| `src/scenes/UI.js` | Modified | Updates HUD with store currency, objective banner, and platform audio controls. |
-| `src/scenes/Preloader.js` | Modified | Generates/loads procedural supermarket texture assets for crisp rendering without external bloat. |
-| `src/scenes/MainMenu.js` | Modified | Smooth transition into the Supermarket Scene with proper `gameReady()` signaling. |
-| `src/main.js` | Modified | Replaces basketball demo scenes with Supermarket scenes while keeping template boot. |
-| `tests/EconomySystem.test.js` | New | Unit tests verifying transactions, non-negative bounds, invalid inputs, and events. |
-| `tests/InventorySystem.test.js` | New | Unit tests verifying stock limits, restock deductions, and invalid transactions. |
+| **M0: Baseline & SDK Setup** | [x] Completed | Template setup, Vite 5, Vitest 2.1.8, YouTube Playables SDK wrapper with offline timeout guard. |
+| **M1: Supermarket Scene & HUD** | [x] Completed | Responsive 2D store, procedural texture atlas, touch-friendly shelves, HUD coin badge, audio toggle. |
+| **M2: Customer AI & Pathing** | [x] Completed | Customer AI state machine, approach pathing, browsing, shelf item consumption, queue management, cashier scan. |
+| **M3: Day Cycles & Marketing** | [x] Completed | 60s business day timer, Daily P&L report, Marketing campaigns (Pamphlets, Loudspeaker, Digital). |
+| **M4: Commercial Bank Debt** | [x] Completed | 3 credit facilities (Micro ₹500, Expansion ₹1,500, Tycoon ₹5,000), amortization, early payoff, emergency bailout (+₹150). |
+| **M5: Upgrades & Automation** | [x] Completed | Cashier scan speed (Laser, Dual-Belt, AI Express), shelf capacity expansions, Jasmine Rice department permit, Milestone tracker. |
+| **M6: Cloud Persistence** | [x] Completed | Dual-adapter `SaveManager` (YouTube Playables Cloud Save + LocalStorage fallback), debounce scheduler, schema v1 validation. |
 
 ---
 
-## 4. Platform Compliance Checklist
-- [x] No unauthorized ad SDKs or payment APIs.
-- [x] No backend dependency.
-- [x] All lifecycle hooks (`firstFrameReady`, `gameReady`, `onPause`, `onResume`, `isAudioEnabled`) strictly follow official SDK specifications.
+## 4. Test Suite & Build Verification
+- **Unit Test Coverage:** 52 passing tests across 9 test suites (`EconomySystem`, `InventorySystem`, `CheckoutSystem`, `CustomerSystem`, `DayCycleSystem`, `MarketingSystem`, `BankLoanSystem`, `ProgressionSystem`, `SaveManager`).
+- **Production Build:** Passes cleanly with zero warnings or external bundle dependencies (`dist/` asset build verified).
+- **Platform Compliance:** Fully compliant with YouTube Playables SDK (`firstFrameReady`, `gameReady`, `loadData`, `saveData`, `onPause`, `onResume`, `isAudioEnabled`). Zero real-money IAPs, zero external ads.
