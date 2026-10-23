@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { YouTubePlayables } from '../YouTubePlayables.js';
-import { FIRST_MILESTONE_COINS } from '../data/products.js';
+import { FIRST_MILESTONE_COINS, CURRENCY_SYMBOL } from '../data/products.js';
 
 export class UI extends Phaser.Scene {
     constructor() {
@@ -42,8 +42,8 @@ export class UI extends Phaser.Scene {
         const icon = this.add.image(22, 0, 'coin-icon').setOrigin(0.5).setScale(0.8);
 
         // Coin Count Text
-        const initialCoins = this.economy ? this.economy.coins : 500;
-        this.coinText = this.add.text(50, 0, `$${initialCoins.toLocaleString()}`, {
+        const initialCoins = this.economy ? this.economy.coins : 250;
+        this.coinText = this.add.text(50, 0, `${CURRENCY_SYMBOL}${initialCoins.toLocaleString()}`, {
             fontFamily: 'system-ui, -apple-system, sans-serif',
             fontSize: '18px',
             fontStyle: 'bold',
@@ -60,7 +60,7 @@ export class UI extends Phaser.Scene {
             .setStrokeStyle(1.5, 0x38bdf8)
             .setOrigin(0.5);
 
-        this.goalText = this.add.text(0, 0, `🎯 Goal: $${FIRST_MILESTONE_COINS.toLocaleString()}`, {
+        this.goalText = this.add.text(0, 0, `🎯 Goal: ${CURRENCY_SYMBOL}${FIRST_MILESTONE_COINS.toLocaleString()}`, {
             fontFamily: 'system-ui, -apple-system, sans-serif',
             fontSize: '14px',
             fontStyle: 'bold',
@@ -147,7 +147,7 @@ export class UI extends Phaser.Scene {
 
     updateCoinText() {
         if (!this.coinText || !this.economy) return;
-        this.coinText.setText(`$${this.economy.coins.toLocaleString()}`);
+        this.coinText.setText(`${CURRENCY_SYMBOL}${this.economy.coins.toLocaleString()}`);
 
         // Quick punch scale animation on coin update
         this.tweens.add({

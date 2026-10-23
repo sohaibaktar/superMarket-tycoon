@@ -65,5 +65,6 @@ export const PRODUCTS = {
     }
 };
 
-export const INITIAL_COINS = 500;
+export const CURRENCY_SYMBOL = '₹';
+export const INITIAL_COINS = 250;
 export const FIRST_MILESTONE_COINS = 2000;

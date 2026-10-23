@@ -1,4 +1,4 @@
-import { PRODUCTS } from '../data/products.js';
+import { PRODUCTS, CURRENCY_SYMBOL } from '../data/products.js';
 
 /**
  * ShelfDisplay: Touch-friendly UI component representing a product shelf in the supermarket.
@@ -56,8 +56,8 @@ export class ShelfDisplay extends Phaser.GameObjects.Container {
         }).setOrigin(0, 0.5);
         this.add(this.titleText);
 
-        // Price Tag: "Cost: $5 | Price: $10"
-        this.priceText = this.scene.add.text(-38, -14, `Cost: $${p.restockCost} | Sell: $${p.sellPrice}`, {
+        // Price Tag: "Cost: ₹5 | Price: ₹10"
+        this.priceText = this.scene.add.text(-38, -14, `Cost: ${CURRENCY_SYMBOL}${p.restockCost} | Sell: ${CURRENCY_SYMBOL}${p.sellPrice}`, {
             fontFamily: 'system-ui, -apple-system, sans-serif',
             fontSize: '12px',
             color: '#64748b'
@@ -91,7 +91,7 @@ export class ShelfDisplay extends Phaser.GameObjects.Container {
             .setStrokeStyle(1.5, 0x38bdf8);
         btnBg.setInteractive({ useHandCursor: true });
 
-        const btnText = this.scene.add.text(0, 0, `+${restockQty} Restock ($${restockCost})`, {
+        const btnText = this.scene.add.text(0, 0, `+${restockQty} Restock (${CURRENCY_SYMBOL}${restockCost})`, {
             fontFamily: 'system-ui, -apple-system, sans-serif',
             fontSize: '13px',
             fontStyle: 'bold',
@@ -141,7 +141,7 @@ export class ShelfDisplay extends Phaser.GameObjects.Container {
             this.showFloatingText(`+${result.added} (${this.product.shortName})`, '#16a34a');
 
             if (this.onFeedback) {
-                this.onFeedback(`Restocked ${result.added} ${this.product.displayName}! (-$${result.cost})`, 'success');
+                this.onFeedback(`Restocked ${result.added} ${this.product.displayName}! (-${CURRENCY_SYMBOL}${result.cost})`, 'success');
             }
         } else {
             // Shake button on failure
@@ -158,7 +158,7 @@ export class ShelfDisplay extends Phaser.GameObjects.Container {
 
             let msg = 'Cannot restock!';
             if (result.reason === 'insufficient_funds') {
-                msg = `Need $${result.cost} to restock!`;
+                msg = `Need ${CURRENCY_SYMBOL}${result.cost} to restock!`;
             } else if (result.reason === 'shelf_full') {
                 msg = 'Shelf is full!';
             }
