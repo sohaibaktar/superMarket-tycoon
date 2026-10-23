@@ -2,6 +2,8 @@ import { Scene } from 'phaser';
 import { YouTubePlayables } from '../YouTubePlayables.js';
 import { EconomySystem } from '../systems/EconomySystem.js';
 import { InventorySystem } from '../systems/InventorySystem.js';
+import { CheckoutSystem } from '../systems/CheckoutSystem.js';
+import { CustomerSystem } from '../systems/CustomerSystem.js';
 import { INITIAL_COINS } from '../data/products.js';
 
 export class Boot extends Scene {
@@ -38,9 +40,13 @@ export class Boot extends Scene {
         // Initialize core domain systems
         const economySystem = new EconomySystem(initialCoins);
         const inventorySystem = new InventorySystem(economySystem, initialStock);
+        const checkoutSystem = new CheckoutSystem(inventorySystem, economySystem);
+        const customerSystem = new CustomerSystem(inventorySystem, checkoutSystem);
 
         this.registry.set('economySystem', economySystem);
         this.registry.set('inventorySystem', inventorySystem);
+        this.registry.set('checkoutSystem', checkoutSystem);
+        this.registry.set('customerSystem', customerSystem);
 
         // YouTube Playables SDK Pause and Resume lifecycle hooks
         YouTubePlayables.setOnPause(() => {

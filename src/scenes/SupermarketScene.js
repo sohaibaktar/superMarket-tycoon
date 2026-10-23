@@ -1,6 +1,7 @@
 import { Scene } from 'phaser';
 import { ShelfDisplay } from '../ui/ShelfDisplay.js';
-import { PRODUCTS } from '../data/products.js';
+import { CustomerSprite } from '../gameobjects/CustomerSprite.js';
+import { PRODUCTS, CURRENCY_SYMBOL } from '../data/products.js';
 
 export class SupermarketScene extends Scene {
     constructor() {
@@ -8,17 +9,50 @@ export class SupermarketScene extends Scene {
     }
 
     create() {
-        // Retrieve global domain systems from registry (initialized in Boot.js)
+        // Retrieve global domain systems from registry
         this.economy = this.registry.get('economySystem');
         this.inventory = this.registry.get('inventorySystem');
+        this.checkout = this.registry.get('checkoutSystem');
+        this.customers = this.registry.get('customerSystem');
 
-        // Create main store container so the whole market scales & centers cleanly
+        // Customer sprite lookup & pathing definitions
+        this.customerSprites = new Map();
+        this.isProcessingCheckout = false;
+
+        this.entrancePos = { x: 410, y: 1040 };
+        this.exitPos = { x: 340, y: 1090 };
+
+        this.shelfLocations = {
+            apples: { x: 230, y: 260, approachX: 310, approachY: 260 },
+            milk: { x: 590, y: 260, approachX: 510, approachY: 260 },
+            bread: { x: 230, y: 430, approachX: 310, approachY: 430 },
+            rice: { x: 590, y: 430, approachX: 510, approachY: 430 },
+            snacks: { x: 230, y: 600, approachX: 310, approachY: 600 }
+        };
+
+        // Create main store container so everything scales & centers responsively
         this.storeContainer = this.add.container(0, 0);
 
         this.buildSupermarketEnvironment();
         this.buildShelves();
         this.buildCheckoutCounter();
         this.buildEntranceAndDecor();
+
+        // Customer AI system events
+        this.setupCustomerSystemEvents();
+
+        // Spawning timer (new shopper arrives every 3.8s)
+        this.spawnTimer = this.time.addEvent({
+            delay: 3800,
+            callback: this.trySpawnCustomer,
+            callbackScope: this,
+            loop: true
+        });
+
+        // Spawn first customer after 1s for immediate action
+        this.time.delayedCall(1000, () => {
+            this.trySpawnCustomer();
+        });
 
         // Responsive positioning
         this.layoutStore();
@@ -27,15 +61,14 @@ export class SupermarketScene extends Scene {
         // Bring HUD UI to top
         this.scene.bringToTop('UI');
 
-        // Initial welcome feedback to guide player
+        // Guide prompt in HUD
         const uiScene = this.scene.get('UI');
         if (uiScene && uiScene.showToast) {
-            uiScene.showToast('Welcome to Mini Mart! Tap shelves to restock products.');
+            uiScene.showToast('Shoppers are arriving! Keep shelves stocked to earn revenue.', 'info');
         }
     }
 
     buildSupermarketEnvironment() {
-        // Base store dimensions (820 width x 1180 height design viewport)
         const storeWidth = 820;
         const storeHeight = 1180;
 
@@ -48,12 +81,9 @@ export class SupermarketScene extends Scene {
             .setStrokeStyle(3, 0x0284c7, 0.4);
         this.storeContainer.add(this.storeBorder);
 
-        // Aisle Runners (Guide pathways for customers and players)
-        // Left Aisle Runner
+        // Aisle Runners
         this.leftAisle = this.add.tileSprite(200, 560, 90, 680, 'aisle-runner');
-        // Right Aisle Runner
         this.rightAisle = this.add.tileSprite(620, 560, 90, 680, 'aisle-runner');
-        // Center Crossing Aisle
         this.centerCross = this.add.tileSprite(410, 560, 480, 80, 'aisle-runner');
 
         this.storeContainer.add([this.leftAisle, this.rightAisle, this.centerCross]);
@@ -73,9 +103,6 @@ export class SupermarketScene extends Scene {
             }
         };
 
-        // Layout: Left column and Right column of shelves
-        // Left: Apples (Top), Bread (Middle), Snacks (Bottom)
-        // Right: Milk (Top), Rice (Middle)
         const shelfConfigs = [
             { id: 'apples', x: 230, y: 260 },
             { id: 'milk', x: 590, y: 260 },
@@ -100,11 +127,10 @@ export class SupermarketScene extends Scene {
     }
 
     buildCheckoutCounter() {
-        // Checkout Section in the lower portion of the store
         this.checkoutDesk = this.add.image(560, 820, 'checkout-counter').setOrigin(0.5);
         this.storeContainer.add(this.checkoutDesk);
 
-        // Queue Line: 4 designated waiting spots for upcoming Customer AI
+        // Queue Line: 4 designated waiting spots
         this.queueSpots = [];
         const queueStartX = 380;
         const queueSpacing = 65;
@@ -125,7 +151,7 @@ export class SupermarketScene extends Scene {
             this.queueSpots.push({ x: spotX, y: queueY });
         }
 
-        // Cashier Staff Marker (Idle animation placeholder for staff)
+        // Cashier Staff Marker
         this.cashierMarker = this.add.circle(560, 750, 16, 0x0284c7);
         const cashierLabel = this.add.text(560, 750, 'Staff', {
             fontFamily: 'sans-serif',
@@ -135,7 +161,6 @@ export class SupermarketScene extends Scene {
         }).setOrigin(0.5);
         this.storeContainer.add([this.cashierMarker, cashierLabel]);
 
-        // Idle breathing tween for cashier
         this.tweens.add({
             targets: this.cashierMarker,
             scaleY: 1.1,
@@ -147,11 +172,9 @@ export class SupermarketScene extends Scene {
     }
 
     buildEntranceAndDecor() {
-        // Store Entrance at bottom center
         this.entranceMat = this.add.image(410, 1040, 'entrance-mat').setOrigin(0.5);
         this.storeContainer.add(this.entranceMat);
 
-        // Store Tip / Quick Tutorial Hint
         this.hintBox = this.add.container(410, 940);
         const hintBg = this.add.rectangle(0, 0, 480, 42, 0xffffff, 0.95)
             .setStrokeStyle(1.5, 0x93c5fd);
@@ -166,21 +189,239 @@ export class SupermarketScene extends Scene {
         this.storeContainer.add(this.hintBox);
     }
 
+    setupCustomerSystemEvents() {
+        // Listen to queue shifts to step customers forward in line
+        this._unsubscribeCustomerSystem = this.customers.subscribe((event) => {
+            if (event.type === 'queue_shifted') {
+                for (let i = 0; i < this.customers._maxQueue; i++) {
+                    const cust = this.customers.getCustomerAtQueueSpot(i);
+                    if (cust && this.customerSprites.has(cust.id)) {
+                        const sprite = this.customerSprites.get(cust.id);
+                        const targetSpot = this.queueSpots[i];
+                        sprite.walkTo(targetSpot.x, targetSpot.y, 650, () => {
+                            if (i === 0) {
+                                this.scheduleFrontCheckout();
+                            }
+                        });
+                    }
+                }
+            }
+        });
+    }
+
+    trySpawnCustomer() {
+        const customer = this.customers.spawnCustomer();
+        if (!customer) return;
+
+        // Instantiate visual customer at entrance
+        const sprite = new CustomerSprite(this, this.entrancePos.x, this.entrancePos.y, customer);
+        this.storeContainer.add(sprite);
+        this.customerSprites.set(customer.id, sprite);
+
+        // Walk inside to center aisle first
+        sprite.walkTo(410, 800, 1000, () => {
+            this.routeCustomerShopping(customer, sprite);
+        });
+    }
+
+    routeCustomerShopping(customer, sprite) {
+        if (!customer || !sprite) return;
+
+        const targetProductId = customer.currentTargetProductId;
+
+        if (targetProductId && this.shelfLocations[targetProductId]) {
+            const loc = this.shelfLocations[targetProductId];
+            sprite.showThought(targetProductId);
+
+            // Walk to shelf approach point
+            sprite.walkTo(loc.approachX, loc.approachY, 1400, () => {
+                // Arrived at shelf: attempt to take item
+                this.time.delayedCall(500, () => {
+                    const res = this.customers.tryTakeItem(customer.id, targetProductId);
+
+                    if (res.success) {
+                        sprite.updateBasket(customer.totalItemCount);
+                        // Quick shelf punch animation
+                        const shelf = this.shelves.find(s => s.productId === targetProductId);
+                        if (shelf) {
+                            this.tweens.add({
+                                targets: shelf.prodIcon,
+                                scaleX: 1.2,
+                                scaleY: 1.2,
+                                duration: 100,
+                                yoyo: true
+                            });
+                        }
+                    } else {
+                        // Product out of stock!
+                        sprite.showDisappointed();
+                    }
+
+                    // Advance target and continue shopping after brief pause
+                    this.time.delayedCall(600, () => {
+                        customer.advanceTarget();
+                        this.routeCustomerShopping(customer, sprite);
+                    });
+                });
+            });
+        } else {
+            // Customer finished browsing all items on their shopping list
+            if (customer.totalItemCount > 0) {
+                // Proceed to checkout queue
+                this.routeCustomerToQueue(customer, sprite);
+            } else {
+                // All desired items were out of stock! Customer leaves disappointed
+                sprite.showDisappointed();
+                this.time.delayedCall(700, () => {
+                    this.routeCustomerToExit(customer, sprite);
+                });
+            }
+        }
+    }
+
+    routeCustomerToQueue(customer, sprite) {
+        const joinRes = this.customers.joinQueue(customer.id);
+
+        if (!joinRes.success) {
+            // Queue is full! Customer is impatient and leaves
+            sprite.showDisappointed();
+            const uiScene = this.scene.get('UI');
+            if (uiScene && uiScene.showToast) {
+                uiScene.showToast('Checkout queue is full! A customer left.', 'error');
+            }
+            this.time.delayedCall(600, () => {
+                this.routeCustomerToExit(customer, sprite);
+            });
+            return;
+        }
+
+        sprite.hideThought();
+        const targetSpot = this.queueSpots[joinRes.spotIndex];
+
+        sprite.walkTo(targetSpot.x, targetSpot.y, 1100, () => {
+            if (joinRes.spotIndex === 0) {
+                this.scheduleFrontCheckout();
+            }
+        });
+    }
+
+    scheduleFrontCheckout() {
+        if (this.isProcessingCheckout) return;
+
+        this.time.delayedCall(900, () => {
+            this.processFrontCheckout();
+        });
+    }
+
+    processFrontCheckout() {
+        const frontCustomer = this.customers.getCustomerAtQueueSpot(0);
+        if (!frontCustomer || this.isProcessingCheckout) return;
+
+        this.isProcessingCheckout = true;
+
+        // Cashier scan animation & sound
+        this.tweens.add({
+            targets: this.cashierMarker,
+            scaleX: 1.3,
+            scaleY: 1.3,
+            duration: 120,
+            yoyo: true
+        });
+
+        try {
+            this.sound.play('throw', { volume: 0.5 });
+        } catch (e) {
+            // Audio error safety
+        }
+
+        const serveRes = this.customers.serveFrontOfQueue();
+
+        if (serveRes.success && serveRes.customer) {
+            const customer = serveRes.customer;
+            const sprite = this.customerSprites.get(customer.id);
+
+            if (sprite) {
+                sprite.showHeart();
+            }
+
+            // Floating coin popup above register
+            this.showRegisterPopup(`+${CURRENCY_SYMBOL}${serveRes.total}`);
+
+            // Toast in HUD
+            const uiScene = this.scene.get('UI');
+            if (uiScene && uiScene.showToast) {
+                uiScene.showToast(`Sold goods for +${CURRENCY_SYMBOL}${serveRes.total}!`, 'success');
+            }
+
+            // Exit store
+            this.time.delayedCall(700, () => {
+                if (sprite) {
+                    this.routeCustomerToExit(customer, sprite);
+                }
+                this.isProcessingCheckout = false;
+            });
+        } else {
+            this.isProcessingCheckout = false;
+        }
+    }
+
+    showRegisterPopup(text) {
+        const popup = this.add.text(560, 780, text, {
+            fontFamily: 'system-ui, -apple-system, sans-serif',
+            fontSize: '18px',
+            fontStyle: 'bold',
+            color: '#22c55e',
+            stroke: '#ffffff',
+            strokeThickness: 3
+        }).setOrigin(0.5);
+
+        this.storeContainer.add(popup);
+
+        this.tweens.add({
+            targets: popup,
+            y: 730,
+            scaleX: 1.25,
+            scaleY: 1.25,
+            alpha: 0,
+            duration: 1000,
+            ease: 'Power1',
+            onComplete: () => {
+                popup.destroy();
+            }
+        });
+    }
+
+    routeCustomerToExit(customer, sprite) {
+        if (!sprite) return;
+
+        sprite.walkTo(this.exitPos.x, this.exitPos.y, 1400, () => {
+            sprite.destroy();
+            this.customerSprites.delete(customer.id);
+            this.customers.removeCustomer(customer.id);
+        });
+    }
+
     layoutStore() {
         const width = this.scale.width;
         const height = this.scale.height;
 
-        // Base game virtual resolution
         const baseWidth = 820;
         const baseHeight = 1180;
 
-        // Calculate uniform scale factor to fit viewport while maintaining aspect ratio
         const scale = Math.min(width / baseWidth, height / baseHeight);
 
         this.storeContainer.setScale(scale);
-
-        // Center container in window
         this.storeContainer.x = (width - (baseWidth * scale)) / 2;
         this.storeContainer.y = (height - (baseHeight * scale)) / 2;
+    }
+
+    destroy(fromScene) {
+        if (this.spawnTimer) {
+            this.spawnTimer.remove();
+        }
+        if (this._unsubscribeCustomerSystem) {
+            this._unsubscribeCustomerSystem();
+        }
+        super.destroy(fromScene);
     }
 }

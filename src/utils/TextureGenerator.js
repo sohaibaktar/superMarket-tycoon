@@ -18,6 +18,7 @@ export class TextureGenerator {
         this.generateQueueSpot(scene);
         this.generateAudioIcons(scene);
         this.generateStoreBanner(scene);
+        this.generateCustomerGraphics(scene);
     }
 
     static generateFloorTile(scene) {
@@ -487,5 +488,179 @@ export class TextureGenerator {
         ctx.fillText('★ MINI MART STORE #1 ★', 260, 48);
 
         canvas.refresh();
+    }
+
+    static generateCustomerGraphics(scene) {
+        // Customer visual variations
+        const avatarPalette = [
+            { shirt: '#2563eb', hair: '#1e293b', skin: '#fed7aa', pants: '#1e3a8a' }, // Blue
+            { shirt: '#059669', hair: '#78350f', skin: '#fde047', pants: '#064e3b' }, // Green
+            { shirt: '#ea580c', hair: '#172554', skin: '#fed7aa', pants: '#7c2d12' }, // Orange
+            { shirt: '#9333ea', hair: '#451a03', skin: '#fcd34d', pants: '#581c87' }, // Purple
+            { shirt: '#0284c7', hair: '#b45309', skin: '#fef08a', pants: '#0f172a' }  // Teal
+        ];
+
+        avatarPalette.forEach((theme, i) => {
+            const key = `customer-avatar-${i}`;
+            if (!scene.textures.exists(key)) {
+                const canvas = scene.textures.createCanvas(key, 44, 58);
+                const ctx = canvas.context;
+
+                // Soft shadow at feet
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                ctx.beginPath();
+                ctx.ellipse(22, 54, 14, 4, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Shoes
+                ctx.fillStyle = '#0f172a';
+                ctx.beginPath();
+                ctx.roundRect(12, 48, 8, 6, 2);
+                ctx.roundRect(24, 48, 8, 6, 2);
+                ctx.fill();
+
+                // Pants
+                ctx.fillStyle = theme.pants;
+                ctx.beginPath();
+                ctx.roundRect(14, 34, 16, 16, 2);
+                ctx.fill();
+
+                // Torso / Shirt
+                ctx.fillStyle = theme.shirt;
+                ctx.beginPath();
+                ctx.roundRect(10, 20, 24, 16, 4);
+                ctx.fill();
+
+                // Shirt collar
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.moveTo(18, 20); ctx.lineTo(22, 25); ctx.lineTo(26, 20);
+                ctx.fill();
+
+                // Head / Face
+                ctx.fillStyle = theme.skin;
+                ctx.beginPath();
+                ctx.arc(22, 13, 10, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Eyes
+                ctx.fillStyle = '#1e293b';
+                ctx.beginPath();
+                ctx.arc(19, 13, 1.5, 0, Math.PI * 2);
+                ctx.arc(25, 13, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Hair
+                ctx.fillStyle = theme.hair;
+                ctx.beginPath();
+                ctx.arc(22, 10, 10, Math.PI, Math.PI * 2);
+                ctx.fill();
+
+                canvas.refresh();
+            }
+        });
+
+        // Shopping Basket item icon
+        if (!scene.textures.exists('customer-basket')) {
+            const canvas = scene.textures.createCanvas('customer-basket', 28, 24);
+            const ctx = canvas.context;
+
+            // Basket handle
+            ctx.strokeStyle = '#78350f';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(14, 12, 9, Math.PI, Math.PI * 2);
+            ctx.stroke();
+
+            // Basket body
+            ctx.fillStyle = '#d97706';
+            ctx.beginPath();
+            ctx.moveTo(4, 10);
+            ctx.lineTo(24, 10);
+            ctx.lineTo(21, 22);
+            ctx.lineTo(7, 22);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = '#b45309';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            canvas.refresh();
+        }
+
+        // Thought bubble for customer shelf desires
+        if (!scene.textures.exists('bubble-thought')) {
+            const canvas = scene.textures.createCanvas('bubble-thought', 44, 40);
+            const ctx = canvas.context;
+
+            // Main bubble
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.roundRect(2, 2, 40, 28, 8);
+            ctx.fill();
+            ctx.strokeStyle = '#0284c7';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Pointer tail
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.moveTo(18, 30);
+            ctx.lineTo(22, 38);
+            ctx.lineTo(26, 30);
+            ctx.fill();
+
+            ctx.strokeStyle = '#0284c7';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(18, 29);
+            ctx.lineTo(22, 38);
+            ctx.lineTo(26, 29);
+            ctx.stroke();
+
+            canvas.refresh();
+        }
+
+        // Happy heart icon for completed transaction
+        if (!scene.textures.exists('bubble-heart')) {
+            const canvas = scene.textures.createCanvas('bubble-heart', 26, 26);
+            const ctx = canvas.context;
+
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.arc(9, 9, 6, Math.PI, 0, false);
+            ctx.arc(17, 9, 6, Math.PI, 0, false);
+            ctx.lineTo(13, 22);
+            ctx.closePath();
+            ctx.fill();
+
+            canvas.refresh();
+        }
+
+        // Disappointed / Out-of-stock broken heart
+        if (!scene.textures.exists('bubble-disappointed')) {
+            const canvas = scene.textures.createCanvas('bubble-disappointed', 26, 26);
+            const ctx = canvas.context;
+
+            ctx.fillStyle = '#64748b';
+            ctx.beginPath();
+            ctx.arc(9, 9, 6, Math.PI, 0, false);
+            ctx.arc(17, 9, 6, Math.PI, 0, false);
+            ctx.lineTo(13, 22);
+            ctx.closePath();
+            ctx.fill();
+
+            // Crack in heart
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(13, 6);
+            ctx.lineTo(11, 11);
+            ctx.lineTo(15, 14);
+            ctx.lineTo(13, 20);
+            ctx.stroke();
+
+            canvas.refresh();
+        }
     }
 }
