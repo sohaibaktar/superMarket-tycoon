@@ -14,6 +14,9 @@ export class SupermarketScene extends Scene {
         this.inventory = this.registry.get('inventorySystem');
         this.checkout = this.registry.get('checkoutSystem');
         this.customers = this.registry.get('customerSystem');
+        this.dayCycle = this.registry.get('dayCycleSystem');
+        this.marketing = this.registry.get('marketingSystem');
+        this.bank = this.registry.get('bankLoanSystem');
 
         // Customer sprite lookup & pathing definitions
         this.customerSprites = new Map();
@@ -41,18 +44,8 @@ export class SupermarketScene extends Scene {
         // Customer AI system events
         this.setupCustomerSystemEvents();
 
-        // Spawning timer (new shopper arrives every 3.8s)
-        this.spawnTimer = this.time.addEvent({
-            delay: 3800,
-            callback: this.trySpawnCustomer,
-            callbackScope: this,
-            loop: true
-        });
-
-        // Spawn first customer after 1s for immediate action
-        this.time.delayedCall(1000, () => {
-            this.trySpawnCustomer();
-        });
+        // Dynamic Spawning loop responsive to marketing footfall boosts
+        this.scheduleNextSpawn();
 
         // Responsive positioning
         this.layoutStore();
@@ -209,9 +202,31 @@ export class SupermarketScene extends Scene {
         });
     }
 
+    scheduleNextSpawn() {
+        const multiplier = this.marketing ? this.marketing.currentFootfallMultiplier : 1.0;
+        const delay = Math.max(1200, Math.floor(3800 / multiplier));
+        this.spawnTimer = this.time.delayedCall(delay, () => {
+            this.trySpawnCustomer();
+            this.scheduleNextSpawn();
+        });
+    }
+
     trySpawnCustomer() {
+        // Stop spawning new customers if store is closed for the night
+        if (this.dayCycle && !this.dayCycle.isDayActive) return;
+
         const customer = this.customers.spawnCustomer();
         if (!customer) return;
+
+        // If marketing campaign has basket bonus, add extra desired items
+        if (this.marketing && this.marketing.basketBonus > 0) {
+            const allProducts = Object.keys(PRODUCTS);
+            const extraCount = Math.min(this.marketing.basketBonus, allProducts.length - customer.desiredProductIds.length);
+            for (let i = 0; i < extraCount; i++) {
+                const unpicked = allProducts.find(p => !customer.desiredProductIds.includes(p));
+                if (unpicked) customer.desiredProductIds.push(unpicked);
+            }
+        }
 
         // Instantiate visual customer at entrance
         const sprite = new CustomerSprite(this, this.entrancePos.x, this.entrancePos.y, customer);
@@ -339,6 +354,11 @@ export class SupermarketScene extends Scene {
         if (serveRes.success && serveRes.customer) {
             const customer = serveRes.customer;
             const sprite = this.customerSprites.get(customer.id);
+
+            // Record revenue in daily ledger
+            if (this.dayCycle) {
+                this.dayCycle.recordRevenue(serveRes.total);
+            }
 
             if (sprite) {
                 sprite.showHeart();

@@ -4,6 +4,9 @@ import { EconomySystem } from '../systems/EconomySystem.js';
 import { InventorySystem } from '../systems/InventorySystem.js';
 import { CheckoutSystem } from '../systems/CheckoutSystem.js';
 import { CustomerSystem } from '../systems/CustomerSystem.js';
+import { DayCycleSystem } from '../systems/DayCycleSystem.js';
+import { MarketingSystem } from '../systems/MarketingSystem.js';
+import { BankLoanSystem } from '../systems/BankLoanSystem.js';
 import { INITIAL_COINS } from '../data/products.js';
 
 export class Boot extends Scene {
@@ -42,11 +45,17 @@ export class Boot extends Scene {
         const inventorySystem = new InventorySystem(economySystem, initialStock);
         const checkoutSystem = new CheckoutSystem(inventorySystem, economySystem);
         const customerSystem = new CustomerSystem(inventorySystem, checkoutSystem);
+        const dayCycleSystem = new DayCycleSystem({ dayDurationSeconds: 60 });
+        const marketingSystem = new MarketingSystem(economySystem, dayCycleSystem);
+        const bankLoanSystem = new BankLoanSystem(economySystem, dayCycleSystem);
 
         this.registry.set('economySystem', economySystem);
         this.registry.set('inventorySystem', inventorySystem);
         this.registry.set('checkoutSystem', checkoutSystem);
         this.registry.set('customerSystem', customerSystem);
+        this.registry.set('dayCycleSystem', dayCycleSystem);
+        this.registry.set('marketingSystem', marketingSystem);
+        this.registry.set('bankLoanSystem', bankLoanSystem);
 
         // YouTube Playables SDK Pause and Resume lifecycle hooks
         YouTubePlayables.setOnPause(() => {

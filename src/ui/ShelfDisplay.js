@@ -21,6 +21,7 @@ export class ShelfDisplay extends Phaser.GameObjects.Container {
         this.product = PRODUCTS[productId];
         this.inventory = inventorySystem;
         this.economy = economySystem;
+        this.dayCycle = scene.registry.get('dayCycleSystem');
         this.onFeedback = onRestockFeedback;
 
         this.createComponents();
@@ -139,6 +140,10 @@ export class ShelfDisplay extends Phaser.GameObjects.Container {
 
             // Floating +Quantity Text
             this.showFloatingText(`+${result.added} (${this.product.shortName})`, '#16a34a');
+
+            if (this.dayCycle) {
+                this.dayCycle.recordRestockExpense(result.cost);
+            }
 
             if (this.onFeedback) {
                 this.onFeedback(`Restocked ${result.added} ${this.product.displayName}! (-${CURRENCY_SYMBOL}${result.cost})`, 'success');
