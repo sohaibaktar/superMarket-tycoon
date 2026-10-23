@@ -83,6 +83,10 @@ export class SupermarketScene extends Scene {
         const storeWidth = 820;
         const storeHeight = 1180;
 
+        // Fullscreen ambient terrazzo floor covering the entire screen seamlessly behind store
+        this.ambientFloor = this.add.tileSprite(0, 0, 100, 100, 'supermarket-tile').setOrigin(0.5);
+        this.ambientFloor.setDepth(-1);
+
         // Store Floor Background Tiling (polished terrazzo)
         this.floorTile = this.add.tileSprite(storeWidth / 2, storeHeight / 2, storeWidth - 40, storeHeight - 120, 'supermarket-tile');
         this.storeContainer.add(this.floorTile);
@@ -608,6 +612,11 @@ export class SupermarketScene extends Scene {
     layoutStore() {
         const width = this.scale.width;
         const height = this.scale.height;
+
+        if (this.ambientFloor) {
+            this.ambientFloor.setPosition(width / 2, height / 2);
+            this.ambientFloor.setSize(width + 40, height + 40);
+        }
 
         const baseWidth = 820;
         const baseHeight = 1180;

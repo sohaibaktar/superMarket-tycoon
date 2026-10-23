@@ -30,7 +30,7 @@ export class UpgradesModal extends Phaser.GameObjects.Container {
 
     buildModal() {
         const view = this.scene.scale.getViewPort(this.scene.cameras.main);
-        const modalWidth = Math.min(500, view.width - 40);
+        const modalWidth = 480;
         const modalHeight = 670;
 
         // Dark dim backdrop
@@ -38,8 +38,14 @@ export class UpgradesModal extends Phaser.GameObjects.Container {
             .setInteractive();
         this.add(this.backdrop);
 
-        // Modal Frame
+        // Modal Frame with adaptive mobile scaling
         this.frame = this.scene.add.container(view.centerX, view.centerY);
+        const modalScale = Math.min(
+            1,
+            (view.width - 20) / modalWidth,
+            (view.height - 24) / modalHeight
+        );
+        this.frame.setScale(modalScale);
         this.add(this.frame);
 
         const bg = this.scene.add.rectangle(0, 0, modalWidth, modalHeight, 0x0f172a, 0.98)
@@ -190,7 +196,8 @@ export class UpgradesModal extends Phaser.GameObjects.Container {
             fontFamily: 'system-ui, sans-serif',
             fontSize: '11px',
             fontStyle: 'bold',
-            color: isMax ? '#4ade80' : '#cbd5e1'
+            color: isMax ? '#4ade80' : '#cbd5e1',
+            wordWrap: { width: width - 150 }
         }).setOrigin(0, 0.5);
 
         // Action Button

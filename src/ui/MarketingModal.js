@@ -27,7 +27,7 @@ export class MarketingModal extends Phaser.GameObjects.Container {
 
     buildModal() {
         const view = this.scene.scale.getViewPort(this.scene.cameras.main);
-        const modalWidth = Math.min(480, view.width - 40);
+        const modalWidth = 460;
         const modalHeight = 580;
 
         // Dark dim backdrop
@@ -35,8 +35,14 @@ export class MarketingModal extends Phaser.GameObjects.Container {
             .setInteractive();
         this.add(this.backdrop);
 
-        // Modal Frame
+        // Modal Frame with adaptive mobile scaling
         this.frame = this.scene.add.container(view.centerX, view.centerY);
+        const modalScale = Math.min(
+            1,
+            (view.width - 20) / modalWidth,
+            (view.height - 24) / modalHeight
+        );
+        this.frame.setScale(modalScale);
         this.add(this.frame);
 
         const bg = this.scene.add.rectangle(0, 0, modalWidth, modalHeight, 0x0f172a, 0.98)
@@ -124,7 +130,8 @@ export class MarketingModal extends Phaser.GameObjects.Container {
             fontFamily: 'system-ui, monospace',
             fontSize: '11px',
             fontStyle: 'bold',
-            color: '#4ade80'
+            color: '#4ade80',
+            wordWrap: { width: width - 170 }
         }).setOrigin(0, 0.5);
 
         // Action Button (Launch or Active Timer)

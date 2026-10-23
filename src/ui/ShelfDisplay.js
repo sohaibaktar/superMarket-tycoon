@@ -63,34 +63,35 @@ export class ShelfDisplay extends Phaser.GameObjects.Container {
         // Product Name
         this.titleText = this.scene.add.text(-38, -32, p.displayName, {
             fontFamily: 'system-ui, -apple-system, sans-serif',
-            fontSize: '15px',
+            fontSize: '16px',
             fontStyle: 'bold',
-            color: '#1e293b'
+            color: '#0f172a'
         }).setOrigin(0, 0.5);
         this.add(this.titleText);
 
         // Price Tag: "Cost: ₹5 | Price: ₹10"
-        this.priceText = this.scene.add.text(-38, -14, `Cost: ${CURRENCY_SYMBOL}${p.restockCost} | Sell: ${CURRENCY_SYMBOL}${p.sellPrice}`, {
+        this.priceText = this.scene.add.text(-38, -13, `Cost: ${CURRENCY_SYMBOL}${p.restockCost} | Sell: ${CURRENCY_SYMBOL}${p.sellPrice}`, {
             fontFamily: 'system-ui, -apple-system, sans-serif',
-            fontSize: '12px',
-            color: '#64748b'
+            fontSize: '13px',
+            fontStyle: 'bold',
+            color: '#475569'
         }).setOrigin(0, 0.5);
         this.add(this.priceText);
 
         // Capacity Bar Background
-        this.barBg = this.scene.add.rectangle(-38, 4, 130, 8, 0xe2e8f0).setOrigin(0, 0.5);
+        this.barBg = this.scene.add.rectangle(-38, 5, 130, 9, 0xe2e8f0).setOrigin(0, 0.5);
         this.add(this.barBg);
 
         // Capacity Bar Fill
-        this.barFill = this.scene.add.rectangle(-38, 4, 130, 8, p.color).setOrigin(0, 0.5);
+        this.barFill = this.scene.add.rectangle(-38, 5, 130, 9, p.color).setOrigin(0, 0.5);
         this.add(this.barFill);
 
         // Stock label text
-        this.stockText = this.scene.add.text(98, 4, '0/0', {
-            fontFamily: 'monospace',
-            fontSize: '11px',
+        this.stockText = this.scene.add.text(98, 5, '0/0', {
+            fontFamily: 'system-ui, monospace',
+            fontSize: '12px',
             fontStyle: 'bold',
-            color: '#334155'
+            color: '#1e293b'
         }).setOrigin(1, 0.5);
         this.add(this.stockText);
 
@@ -101,13 +102,13 @@ export class ShelfDisplay extends Phaser.GameObjects.Container {
         this.restockQty = restockQty;
         this.restockCost = restockQty * p.restockCost;
 
-        this.btnBg = this.scene.add.rectangle(0, 0, 190, 34, 0x0284c7, 1)
+        this.btnBg = this.scene.add.rectangle(0, 0, 192, 36, 0x0284c7, 1)
             .setStrokeStyle(1.5, 0x38bdf8);
         this.btnBg.setInteractive({ useHandCursor: true });
 
         this.btnText = this.scene.add.text(0, 0, `+${restockQty} Restock (${CURRENCY_SYMBOL}${this.restockCost})`, {
             fontFamily: 'system-ui, -apple-system, sans-serif',
-            fontSize: '13px',
+            fontSize: '14px',
             fontStyle: 'bold',
             color: '#ffffff'
         }).setOrigin(0.5);
@@ -155,11 +156,13 @@ export class ShelfDisplay extends Phaser.GameObjects.Container {
             this.btnBg.setFillStyle(0x334155);
             this.btnBg.setStrokeStyle(1.5, 0x475569);
             this.btnText.setText('🔒 Permit Required');
+            this.btnText.setFontSize('13px');
             this.btnText.setColor('#94a3b8');
         } else {
             this.btnBg.setFillStyle(0x0284c7);
             this.btnBg.setStrokeStyle(1.5, 0x38bdf8);
             this.btnText.setText(`+${this.restockQty} Restock (${CURRENCY_SYMBOL}${this.restockCost})`);
+            this.btnText.setFontSize('14px');
             this.btnText.setColor('#ffffff');
         }
     }

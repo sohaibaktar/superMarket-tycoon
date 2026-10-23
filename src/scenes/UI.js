@@ -41,38 +41,38 @@ export class UI extends Phaser.Scene {
     createCoinBadge() {
         this.coinContainer = this.add.container(20, 28);
 
-        const bg = this.add.rectangle(0, 0, 140, 38, 0x0f172a, 0.88)
+        this.coinBg = this.add.rectangle(0, 0, 140, 40, 0x0f172a, 0.92)
             .setStrokeStyle(1.5, 0xeab308)
             .setOrigin(0, 0.5);
 
-        const icon = this.add.image(20, 0, 'coin-icon').setOrigin(0.5).setScale(0.75);
+        this.coinIcon = this.add.image(20, 0, 'coin-icon').setOrigin(0.5).setScale(0.8);
 
         const initialCoins = this.economy ? this.economy.coins : 250;
-        this.coinText = this.add.text(44, 0, `${CURRENCY_SYMBOL}${initialCoins.toLocaleString()}`, {
+        this.coinText = this.add.text(42, 0, `${CURRENCY_SYMBOL}${initialCoins.toLocaleString()}`, {
             fontFamily: 'system-ui, -apple-system, sans-serif',
-            fontSize: '17px',
+            fontSize: '18px',
             fontStyle: 'bold',
             color: '#fef08a'
         }).setOrigin(0, 0.5);
 
-        this.coinContainer.add([bg, icon, this.coinText]);
+        this.coinContainer.add([this.coinBg, this.coinIcon, this.coinText]);
     }
 
     createDayBadge() {
         this.dayContainer = this.add.container(0, 28);
 
-        const bg = this.add.rectangle(0, 0, 160, 38, 0x0f172a, 0.88)
+        this.dayBg = this.add.rectangle(0, 0, 160, 40, 0x0f172a, 0.92)
             .setStrokeStyle(1.5, 0x38bdf8)
             .setOrigin(0.5);
 
         this.dayText = this.add.text(0, 0, '☀️ Day 1 (180s)', {
             fontFamily: 'system-ui, -apple-system, sans-serif',
-            fontSize: '14px',
+            fontSize: '15px',
             fontStyle: 'bold',
             color: '#e0f2fe'
         }).setOrigin(0.5);
 
-        this.dayContainer.add([bg, this.dayText]);
+        this.dayContainer.add([this.dayBg, this.dayText]);
     }
 
     createAudioButton() {
@@ -401,24 +401,34 @@ export class UI extends Phaser.Scene {
         const width = this.scale.width;
         const height = this.scale.height;
 
-        // Top Left: Coin badge
-        this.coinContainer.x = 20;
+        const isNarrow = width < 460;
+
+        // 1. Top Left: Coin badge
+        this.coinContainer.x = isNarrow ? 10 : 20;
         this.coinContainer.y = 28;
 
-        // Top Center: Day badge
+        // 2. Top Right: Audio toggle
+        this.audioBtn.x = width - (isNarrow ? 26 : 36);
+        this.audioBtn.y = 28;
+
+        // 3. Top Center: Day badge
         this.dayContainer.x = width / 2;
         this.dayContainer.y = 28;
 
-        // Top Right: Audio toggle
-        this.audioBtn.x = width - 36;
-        this.audioBtn.y = 28;
-
-        // Bottom Action Bar
+        // 4. Bottom Action Bar (4 buttons: Ads, Upgrades, Bank, Goal)
+        // Natural width is 420px. Dynamically scale on mobile screens so it never clips.
+        const maxBarWidth = 424;
+        const availableWidth = width - 16;
+        const barScale = availableWidth < maxBarWidth ? Math.max(0.68, availableWidth / maxBarWidth) : 1;
+        this.bottomBar.setScale(barScale);
         this.bottomBar.x = width / 2;
-        this.bottomBar.y = height - 32;
+        this.bottomBar.y = height - (30 * barScale);
 
-        // Toast Center
+        // 5. Toast Center
         this.toastBox.x = width / 2;
+        if (this.toastBg) {
+            this.toastBg.setSize(Math.min(420, width - 24), 38);
+        }
     }
 
     destroy(fromScene) {
