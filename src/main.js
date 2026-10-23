@@ -1,50 +1,29 @@
-import { Background } from './scenes/Background';
-import { Boot } from './scenes/Boot';
-import { Game } from './scenes/Game';
-import { GameBackground } from './scenes/GameBackground';
-import { GameOver } from './scenes/GameOver';
-import { MainMenu } from './scenes/MainMenu';
-import { Preloader } from './scenes/Preloader';
-import { UI } from './scenes/UI';
-import { YouTubePlayables } from './YouTubePlayables';
+import { Boot } from './scenes/Boot.js';
+import { Preloader } from './scenes/Preloader.js';
+import { MainMenu } from './scenes/MainMenu.js';
+import { SupermarketScene } from './scenes/SupermarketScene.js';
+import { UI } from './scenes/UI.js';
+import { YouTubePlayables } from './YouTubePlayables.js';
 
-//  Calling YouTubePlayables.boot will wait until the document has loaded
-//  and the YouTube Playables API is ready before calling the callback function.
-
+// Calling YouTubePlayables.boot waits until the document has loaded
+// and the YouTube Playables API is ready before starting the Phaser game.
 YouTubePlayables.boot(() => {
-
-    //  Find out more information about the Game Config at:
-    //  https://newdocs.phaser.io/docs/3.70.0/Phaser.Types.Core.GameConfig
-
     new Phaser.Game({
         type: Phaser.AUTO,
         width: 820,
         height: 1180,
         parent: 'gameParent',
+        backgroundColor: '#0f172a',
         scale: {
-            mode: Phaser.Scale.EXPAND
-        },
-        physics: {
-            default: 'matter',
-            matter: {
-                positionIterations: 12,
-                velocityIterations: 8,
-                gravity: {
-                    y: 1.6
-                },
-                debug: false
-            }
+            mode: Phaser.Scale.EXPAND,
+            autoCenter: Phaser.Scale.CENTER_BOTH
         },
         scene: [
             Boot,
             Preloader,
-            Background,
             MainMenu,
-            Game,
-            GameBackground,
-            GameOver,
+            SupermarketScene,
             UI
         ]
     });
-
 });
