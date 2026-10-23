@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 
 /**
  * CustomerSprite: Visual representation of a customer in the supermarket.
- * Manages walking animations, shopping basket display, and reactive thought bubbles.
+ * Features realistic 2-legged animated walking cycle, shopping basket,
+ * and reactive thought bubbles.
  */
 export class CustomerSprite extends Phaser.GameObjects.Container {
     /**
@@ -15,22 +16,44 @@ export class CustomerSprite extends Phaser.GameObjects.Container {
         super(scene, x, y);
 
         this.customer = customer;
+        this.isWalking = false;
+        this.legTweens = [];
 
-        this.createAvatar();
+        this.createShadow();
+        this.createLegs();
+        this.createTorso();
         this.createBasket();
         this.createThoughtBubble();
 
         scene.add.existing(this);
     }
 
-    createAvatar() {
-        const avatarKey = `customer-avatar-${this.customer.shirtColorIndex}`;
-        this.avatar = this.scene.add.image(0, 0, avatarKey).setOrigin(0.5, 0.9);
-        this.add(this.avatar);
+    createShadow() {
+        this.shadow = this.scene.add.ellipse(0, 4, 28, 9, 0x000000, 0.22);
+        this.add(this.shadow);
+    }
+
+    createLegs() {
+        // Two separate, visible animated legs with pants and white sneakers
+        this.leftLeg = this.scene.add.image(-5, -6, 'customer-leg')
+            .setOrigin(0.5, 0.1);
+
+        this.rightLeg = this.scene.add.image(5, -6, 'customer-leg')
+            .setOrigin(0.5, 0.1);
+
+        this.add([this.leftLeg, this.rightLeg]);
+    }
+
+    createTorso() {
+        const themeIndex = (this.customer.shirtColorIndex || 0) % 5;
+        const torsoKey = `customer-torso-${themeIndex}`;
+        this.torso = this.scene.add.image(0, -20, torsoKey)
+            .setOrigin(0.5, 0.65);
+        this.add(this.torso);
     }
 
     createBasket() {
-        this.basketContainer = this.scene.add.container(16, -16);
+        this.basketContainer = this.scene.add.container(16, -18);
         this.basketContainer.setVisible(false);
 
         const basketIcon = this.scene.add.image(0, 0, 'customer-basket').setOrigin(0.5);
@@ -49,7 +72,7 @@ export class CustomerSprite extends Phaser.GameObjects.Container {
     }
 
     createThoughtBubble() {
-        this.thoughtBubble = this.scene.add.container(0, -66);
+        this.thoughtBubble = this.scene.add.container(0, -68);
         this.thoughtBubble.setAlpha(0);
 
         const bubbleBg = this.scene.add.image(0, 0, 'bubble-thought').setOrigin(0.5);
@@ -62,10 +85,6 @@ export class CustomerSprite extends Phaser.GameObjects.Container {
         this.add(this.thoughtBubble);
     }
 
-    /**
-     * Display a product wanted in the thought bubble.
-     * @param {string} productId
-     */
     showThought(productId) {
         if (!productId) return;
         this.thoughtIcon.setTexture(`prod-${productId}`);
@@ -84,9 +103,6 @@ export class CustomerSprite extends Phaser.GameObjects.Container {
         });
     }
 
-    /**
-     * Show heart reaction upon successful checkout.
-     */
     showHeart() {
         this.thoughtIcon.setTexture('bubble-heart');
         this.thoughtIcon.setScale(0.9);
@@ -97,16 +113,13 @@ export class CustomerSprite extends Phaser.GameObjects.Container {
 
         this.scene.tweens.add({
             targets: this.thoughtBubble,
-            scaleX: 1.1,
-            scaleY: 1.1,
+            scaleX: 1.15,
+            scaleY: 1.15,
             duration: 200,
             yoyo: true
         });
     }
 
-    /**
-     * Show disappointed reaction when product is out of stock.
-     */
     showDisappointed() {
         this.thoughtIcon.setTexture('bubble-disappointed');
         this.thoughtIcon.setScale(0.9);
@@ -114,7 +127,6 @@ export class CustomerSprite extends Phaser.GameObjects.Container {
         this.scene.tweens.killTweensOf(this.thoughtBubble);
         this.thoughtBubble.setAlpha(1);
 
-        // Shake thought bubble
         this.scene.tweens.add({
             targets: this.thoughtBubble,
             x: 4,
@@ -127,9 +139,6 @@ export class CustomerSprite extends Phaser.GameObjects.Container {
         });
     }
 
-    /**
-     * Hide thought bubble.
-     */
     hideThought() {
         this.scene.tweens.add({
             targets: this.thoughtBubble,
@@ -140,16 +149,11 @@ export class CustomerSprite extends Phaser.GameObjects.Container {
         });
     }
 
-    /**
-     * Update basket visual with current total count.
-     * @param {number} count
-     */
     updateBasket(count) {
         if (count > 0) {
             this.basketContainer.setVisible(true);
             this.basketCountText.setText(count.toString());
 
-            // Basket pop animation
             this.scene.tweens.add({
                 targets: this.basketContainer,
                 scaleX: 1.3,
@@ -162,43 +166,115 @@ export class CustomerSprite extends Phaser.GameObjects.Container {
         }
     }
 
-    /**
-     * Smoothly walk to target position with walking wobble animation.
-     * @param {number} targetX
-     * @param {number} targetY
-     * @param {number} [duration=1200]
-     * @param {Function} [onComplete]
-     */
-    walkTo(targetX, targetY, duration = 1200, onComplete = null) {
-        // Face moving direction
-        if (targetX > this.x + 5) {
-            this.avatar.setFlipX(false);
-        } else if (targetX < this.x - 5) {
-            this.avatar.setFlipX(true);
-        }
+    startWalkingAnimation() {
+        if (this.isWalking) return;
+        this.isWalking = true;
 
-        // Walking wobble tween
-        const wobbleTween = this.scene.tweens.add({
-            targets: this.avatar,
-            angle: 4,
-            duration: 120,
+        this.stopWalkingAnimation();
+
+        // 2-leg scissor stepping cycle
+        const t1 = this.scene.tweens.add({
+            targets: this.leftLeg,
+            angle: 24,
+            duration: 160,
             yoyo: true,
             repeat: -1,
             ease: 'Sine.easeInOut'
         });
 
-        // Main translation tween
+        const t2 = this.scene.tweens.add({
+            targets: this.rightLeg,
+            angle: -24,
+            duration: 160,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
+
+        // Gentle torso walking bob
+        const t3 = this.scene.tweens.add({
+            targets: this.torso,
+            y: -23,
+            duration: 160,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
+
+        this.legTweens = [t1, t2, t3];
+    }
+
+    stopWalkingAnimation() {
+        this.isWalking = false;
+        for (const tw of this.legTweens) {
+            if (tw) tw.stop();
+        }
+        this.legTweens = [];
+
+        this.leftLeg.setAngle(0);
+        this.rightLeg.setAngle(0);
+        this.torso.y = -20;
+    }
+
+    /**
+     * Walk to target position at realistic, pleasant walking speed.
+     * @param {number} targetX
+     * @param {number} targetY
+     * @param {number} [duration]
+     * @param {Function} [onComplete]
+     */
+    walkTo(targetX, targetY, duration = null, onComplete = null) {
+        // Face moving direction
+        if (targetX > this.x + 3) {
+            this.torso.setFlipX(false);
+        } else if (targetX < this.x - 3) {
+            this.torso.setFlipX(true);
+        }
+
+        // Realistic walking pace: 105 pixels per second
+        const distance = Phaser.Math.Distance.Between(this.x, this.y, targetX, targetY);
+        const actualDuration = duration !== null ? duration : Math.max(350, Math.floor((distance / 105) * 1000));
+
+        this.startWalkingAnimation();
+
         this.scene.tweens.add({
             targets: this,
             x: targetX,
             y: targetY,
-            duration,
+            duration: actualDuration,
             ease: 'Linear',
             onComplete: () => {
-                wobbleTween.stop();
-                this.avatar.setAngle(0);
+                this.stopWalkingAnimation();
                 if (onComplete) onComplete();
             }
         });
+    }
+
+    /**
+     * Walk through a series of aisle waypoints without stopping between waypoints.
+     * @param {Array<{x: number, y: number}>} waypoints
+     * @param {Function} [onComplete]
+     */
+    walkWaypoints(waypoints, onComplete = null) {
+        if (!waypoints || waypoints.length === 0) {
+            if (onComplete) onComplete();
+            return;
+        }
+
+        const nextPoint = waypoints[0];
+        const remaining = waypoints.slice(1);
+
+        this.walkTo(nextPoint.x, nextPoint.y, null, () => {
+            if (remaining.length > 0) {
+                this.walkWaypoints(remaining, onComplete);
+            } else {
+                if (onComplete) onComplete();
+            }
+        });
+    }
+
+    destroy(fromScene) {
+        this.stopWalkingAnimation();
+        super.destroy(fromScene);
     }
 }

@@ -65,7 +65,7 @@ export class UI extends Phaser.Scene {
             .setStrokeStyle(1.5, 0x38bdf8)
             .setOrigin(0.5);
 
-        this.dayText = this.add.text(0, 0, '☀️ Day 1 (60s)', {
+        this.dayText = this.add.text(0, 0, '☀️ Day 1 (180s)', {
             fontFamily: 'system-ui, -apple-system, sans-serif',
             fontSize: '14px',
             fontStyle: 'bold',

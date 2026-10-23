@@ -61,4 +61,13 @@ describe('ProgressionSystem', () => {
         expect(economy.coins).toBe(1300); // 1000 + 300
         expect(progression.currentMilestone.id).toBe('m2_supermarket');
     });
+
+    it('purchases hire_cashier upgrade and sets isCashierHired to true', () => {
+        expect(progression.isCashierHired).toBe(false);
+        const res = progression.purchaseUpgrade('hire_cashier'); // Costs 100
+        expect(res.success).toBe(true);
+        expect(res.newLevel).toBe(1);
+        expect(progression.isCashierHired).toBe(true);
+        expect(economy.coins).toBe(900); // 1000 - 100
+    });
 });

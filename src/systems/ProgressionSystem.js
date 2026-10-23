@@ -19,7 +19,8 @@ export class ProgressionSystem {
         this._upgradeLevels = {
             cashier_speed: 0,
             shelf_capacity: 0,
-            department_license: 0
+            department_license: 0,
+            hire_cashier: 0
         };
 
         /** @type {Set<string>} */
@@ -30,6 +31,14 @@ export class ProgressionSystem {
 
     getUpgradeLevel(upgradeId) {
         return this._upgradeLevels[upgradeId] ?? 0;
+    }
+
+    /**
+     * Check if an automated cashier has been hired.
+     * @returns {boolean}
+     */
+    get isCashierHired() {
+        return this.getUpgradeLevel('hire_cashier') >= 1;
     }
 
     /**

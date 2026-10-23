@@ -29,7 +29,7 @@ export class Boot extends Scene {
         const inventorySystem = new InventorySystem(economySystem);
         const checkoutSystem = new CheckoutSystem(inventorySystem, economySystem);
         const customerSystem = new CustomerSystem(inventorySystem, checkoutSystem);
-        const dayCycleSystem = new DayCycleSystem({ dayDurationSeconds: 60 });
+        const dayCycleSystem = new DayCycleSystem({ dayDurationSeconds: 180 });
         const marketingSystem = new MarketingSystem(economySystem, dayCycleSystem);
         const bankLoanSystem = new BankLoanSystem(economySystem, dayCycleSystem);
         const progressionSystem = new ProgressionSystem(economySystem, inventorySystem);

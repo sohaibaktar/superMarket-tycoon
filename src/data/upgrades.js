@@ -35,6 +35,16 @@ export const UPGRADES = {
         levels: [
             { level: 1, name: 'Jasmine Rice Commercial Permit', cost: 200, perkDescription: 'Unlocks Jasmine Rice for customer demand and restocking' }
         ]
+    },
+    hire_cashier: {
+        id: 'hire_cashier',
+        name: 'Hire Cashier Staff',
+        icon: '🧑‍💼',
+        description: 'Hire staff to run the cash counter automatically so you do not have to tap.',
+        maxLevel: 1,
+        levels: [
+            { level: 1, name: 'Trained Cashier Staff', cost: 100, perkDescription: 'Automates customer checkout at the cash register' }
+        ]
     }
 };
 

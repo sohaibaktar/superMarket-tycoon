@@ -31,7 +31,7 @@ export class UpgradesModal extends Phaser.GameObjects.Container {
     buildModal() {
         const view = this.scene.scale.getViewPort(this.scene.cameras.main);
         const modalWidth = Math.min(500, view.width - 40);
-        const modalHeight = 620;
+        const modalHeight = 670;
 
         // Dark dim backdrop
         this.backdrop = this.scene.add.rectangle(view.centerX, view.centerY, view.width, view.height, 0x000000, 0.65)
@@ -46,14 +46,14 @@ export class UpgradesModal extends Phaser.GameObjects.Container {
             .setStrokeStyle(2, 0x38bdf8);
 
         // Header
-        const headerText = this.scene.add.text(0, -modalHeight / 2 + 28, '⚡ Store Upgrades & Permits', {
+        const headerText = this.scene.add.text(0, -modalHeight / 2 + 28, '⚡ Store Upgrades & Staff', {
             fontFamily: 'system-ui, -apple-system, sans-serif',
             fontSize: '19px',
             fontStyle: 'bold',
             color: '#f8fafc'
         }).setOrigin(0.5);
 
-        const subheaderText = this.scene.add.text(0, -modalHeight / 2 + 52, 'Invest in automation throughput and business expansion', {
+        const subheaderText = this.scene.add.text(0, -modalHeight / 2 + 52, 'Hire staff, automate checkout, and expand store capacity', {
             fontFamily: 'system-ui, -apple-system, sans-serif',
             fontSize: '11px',
             color: '#94a3b8'
@@ -79,10 +79,10 @@ export class UpgradesModal extends Phaser.GameObjects.Container {
         // Milestone Progress Section
         this.buildMilestoneSection(modalWidth - 40, -modalHeight / 2 + 96);
 
-        // Upgrade Cards
+        // Upgrade Cards (4 cards)
         const upgradesList = Object.values(UPGRADES);
-        const cardStartY = -20;
-        const cardSpacing = 120;
+        const cardStartY = -86;
+        const cardSpacing = 104;
 
         upgradesList.forEach((upgrade, index) => {
             const cardY = cardStartY + (index * cardSpacing);
@@ -204,9 +204,13 @@ export class UpgradesModal extends Phaser.GameObjects.Container {
 
         let labelString = 'MAXED';
         if (isMax) {
-            labelString = upgrade.id === 'department_license' ? 'PERMIT ACTIVE' : 'MAXED';
+            if (upgrade.id === 'hire_cashier') labelString = 'STAFF HIRED ✓';
+            else if (upgrade.id === 'department_license') labelString = 'PERMIT ACTIVE';
+            else labelString = 'MAXED';
         } else if (nextConfig) {
-            labelString = `Upgrade (${CURRENCY_SYMBOL}${nextConfig.cost})`;
+            if (upgrade.id === 'hire_cashier') labelString = `Hire (${CURRENCY_SYMBOL}${nextConfig.cost})`;
+            else if (upgrade.id === 'department_license') labelString = `Permit (${CURRENCY_SYMBOL}${nextConfig.cost})`;
+            else labelString = `Upgrade (${CURRENCY_SYMBOL}${nextConfig.cost})`;
         }
 
         const btnLabel = this.scene.add.text(0, 0, labelString, {
@@ -285,9 +289,13 @@ export class UpgradesModal extends Phaser.GameObjects.Container {
 
             let labelString = 'MAXED';
             if (isMax) {
-                labelString = id === 'department_license' ? 'PERMIT ACTIVE' : 'MAXED';
+                if (id === 'hire_cashier') labelString = 'STAFF HIRED ✓';
+                else if (id === 'department_license') labelString = 'PERMIT ACTIVE';
+                else labelString = 'MAXED';
             } else if (nextConfig) {
-                labelString = `Upgrade (${CURRENCY_SYMBOL}${nextConfig.cost})`;
+                if (id === 'hire_cashier') labelString = `Hire (${CURRENCY_SYMBOL}${nextConfig.cost})`;
+                else if (id === 'department_license') labelString = `Permit (${CURRENCY_SYMBOL}${nextConfig.cost})`;
+                else labelString = `Upgrade (${CURRENCY_SYMBOL}${nextConfig.cost})`;
             }
             els.btnLabel.setText(labelString);
             els.btnLabel.setColor(btnEnabled || isMax ? '#ffffff' : '#94a3b8');

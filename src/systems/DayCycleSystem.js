@@ -6,10 +6,10 @@
 export class DayCycleSystem {
     /**
      * @param {object} [config]
-     * @param {number} [config.dayDurationSeconds=60] Duration of one business day in seconds
+     * @param {number} [config.dayDurationSeconds=180] Duration of one business day in seconds (3 minutes)
      */
     constructor(config = {}) {
-        this.dayDurationSeconds = config.dayDurationSeconds ?? 60;
+        this.dayDurationSeconds = config.dayDurationSeconds ?? 180;
         this.currentDay = 1;
         this.timeRemaining = this.dayDurationSeconds;
         this.isDayActive = true;
